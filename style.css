@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+
+:root {
+    --bg: #f4f1ec;
+    --ink: #1a1a1a;
+    --red: #e03b2f;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Roboto', sans-serif;
+}
+
+.Splash {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    font-size: 16px;
+    text-align: center;
+}
+
+/* a little crooked on purpose */
+.Splash h1 {
+    margin: 0;
+    font-size: clamp(40px, 8vw, 84px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    transform: rotate(-1.5deg);
+}
+
+.Splash h3 {
+    margin: 18px 0 0 90px;
+    font-weight: 300;
+    font-style: italic;
+    font-size: 18px;
+    color: #6b6b6b;
+    transform: rotate(0.8deg);
+}
+
+.button-container {
+    margin-top: 56px;
+    margin-right: -40px;
+}
+
+button {
+    height: 38px;
+    min-width: 120px;
+    padding: 5px 16px;
+    margin: 10px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--bg);
+    border: 3px solid var(--red);
+    border-radius: 2px;
+    cursor: pointer;
+    transform: rotate(2deg);
+    transition: transform 0.15s;
+}
+
+button:hover {
+    transform: rotate(-3deg) translate(-2px, -2px);
+}
+
+button:active {
+    transform: rotate(1deg);
+}
+
+@media (max-width: 480px) {
+    .Splash h3 { margin-left: 30px; }
+    .button-container { margin-right: -10px; }
+}
+
+
+.Splash h5 {
+    margin: 18px 0 0 90px;
+    font-weight: 300;
+    font-style: bold;
+    font-size: 18px;
+    color: #323232;
+}
