@@ -3,9 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>ok fine, sign up</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="./signup.css">
 </head>
 <body>
-    <h1>Hello, World!</h1>
+    <main class="stage">
+        <section class="card" id="card" aria-live="polite"></section>
+    </main>
+
+    <script>
+        // every card lives in here. add a new object = new card
+        const cards = [
+            {
+                kind: 'text',
+                id: 'name',
+                q: "what's your name?",
+                hint: "first name is fine. we're not the government",
+                placeholder: 'name...',
+                check(value) {
+                    const v = value.trim();
+                    if (!v) return 'type something bro';
+
+                    // easter egg: ball is not allowed. ever.
+                    if (v.toLowerCase().replace(/[^a-z]/g, '') === 'ball') {
+                        ballTries++;
+                        return ballMessages[Math.min(ballTries - 1, ballMessages.length - 1)];
+                    }
+                    return null;
+                }
+            },
+            {
+                kind: 'end',
+                q: (a) => `ok ${a.name}. nice to meet you.`,
+                hint: "(the rest of the questions are still being cooked)"
+            }
+        ];
+
+        const ballMessages = [
+            "nope. not that name.",
+            "bro. no.",
+            "we literally just said no",
+            "you're not getting in as ball. ever.",
+            "go touch grass and come back with a real name"
+        ];
+
+        const card = document.getElementById('card');
+        const answers = {};
+        let current = 0;
+        let ballTries = 0;
+
+        function render(i) {
+            const c = cards[i];
+            const q = typeof c.q === 'function' ? c.q(answers) : c.q;
+
+            if (c.kind === 'end') {
+                card.innerHTML = `
+                    <p class="count">card ${i + 1} of way too many</p>
+                    <h2>${q}</h2>
+                    <p class="hint">${c.hint}</p>`;
+                return;
+            }
+
+            card.innerHTML = `
+                <p class="count">card ${i + 1} of way too many</p>
+                <form id="form" autocomplete="off">
+                    <h2>${q}</h2>
+                    <p class="hint">${c.hint}</p>
+                    <input id="field" type="text" placeholder="${c.placeholder}" maxlength="40" spellcheck="false" autocomplete="off">
+                    <p class="msg" id="msg"></p>
+                    <button type="submit">next</button>
+                </form>`;
+
+            const form = document.getElementById('form');
+            const field = document.getElementById('field');
+            const msg = document.getElementById('msg');
+
+            field.focus();
+            field.addEventListener('input', () => { msg.textContent = ''; });
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const error = c.check(field.value);
+                if (error) {
+                    msg.textContent = error;
+                    shake();
+                    field.select();
+                    return;
+                }
+                answers[c.id] = field.value.trim();
+                next();
+            });
+        }
+
+        function shake() {
+            card.classList.remove('shake');
+            void card.offsetWidth; // restart the animation
+            card.classList.add('shake');
+        }
+
+        function next() {
+            card.classList.add('leaving');
+            setTimeout(() => {
+                current++;
+                render(current);
+                card.classList.remove('leaving');
+                card.classList.add('entering');
+                setTimeout(() => card.classList.remove('entering'), 400);
+            }, 350);
+        }
+
+        render(current);
+    </script>
 </body>
 </html>
