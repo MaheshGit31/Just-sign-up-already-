@@ -28,7 +28,6 @@ body {
     text-align: center;
 }
 
-/* a little crooked on purpose */
 .Splash h1 {
     margin: 0;
     font-size: clamp(40px, 8vw, 84px);
@@ -81,7 +80,6 @@ button:active {
     .Splash h3 { margin-left: 30px; }
     .button-container { margin-right: -10px; }
 }
-
 
 .Splash h5 {
     margin: 18px 0 0 90px;

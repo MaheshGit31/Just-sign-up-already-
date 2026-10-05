@@ -13,7 +13,6 @@
     </main>
 
     <script>
-        // every card lives in here. add a new object = new card
         const cards = [
             {
                 kind: 'text',
@@ -25,7 +24,6 @@
                     const v = value.trim();
                     if (!v) return 'type something bro';
 
-                    // easter egg: ball is not allowed. ever.
                     if (v.toLowerCase().replace(/[^a-z]/g, '') === 'ball') {
                         ballTries++;
                         return ballMessages[Math.min(ballTries - 1, ballMessages.length - 1)];
@@ -98,7 +96,7 @@
 
         function shake() {
             card.classList.remove('shake');
-            void card.offsetWidth; // restart the animation
+            void card.offsetWidth;
             card.classList.add('shake');
         }
 

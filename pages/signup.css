@@ -1,4 +1,3 @@
-/* card stuff for the sign up page. base look comes from ../style.css */
 
 .stage {
     min-height: 100vh;
@@ -82,7 +81,6 @@ input[type="text"]::placeholder {
     display: block;
 }
 
-/* card movement */
 .card.leaving {
     transform: translateX(-130%) rotate(-14deg);
     opacity: 0;
