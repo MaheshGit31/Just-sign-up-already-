@@ -21,11 +21,22 @@
             "go touch grass and come back with a real name"
         ];
 
+        const sureRounds = [
+            ['are you sure?', 'this is your last chance to back out'],
+            ['are you really sure?', 'think about it'],
+            ['like really really sure?', "we'll wait"],
+            ['last chance. sure?', 'we mean it this time'],
+            ['ok but are you REALLY sure?', 'okay fine. final one. promise']
+        ];
+
+        const alphabetBackwards = 'zyxwvutsrqponmlkjihgfedcba';
+
         const card = document.getElementById('card');
         let answers = {};
         let current = 0;
         let ballTries = 0;
         let colorTries = 0;
+        let sureRound = 0;
         let busy = false;
 
         const esc = (s) => s.replace(/[&<>"']/g, (ch) => ({
@@ -33,6 +44,8 @@
         }[ch]));
 
         const isBall = (v) => v.toLowerCase().replace(/[^a-z]/g, '') === 'ball';
+
+        const count = (i) => `<p class="count">card ${i + 1} of way too many</p>`;
 
         const cards = [
             {
@@ -50,7 +63,7 @@
                 kind: 'text',
                 id: 'email',
                 q: "what's your email?",
-                hint: "we promise to only email you 400 times a day",
+                hint: 'we promise to only email you 400 times a day',
                 placeholder: 'you@something.com',
                 check(v) {
                     if (!v) return 'type something bro';
@@ -129,26 +142,75 @@
                 }
             },
             {
+                kind: 'text',
+                id: 'human',
+                q: "prove you're human",
+                hint: 'type the alphabet backwards. all 26. no mistakes',
+                placeholder: 'zyx...',
+                check(v) {
+                    const typed = v.toLowerCase().replace(/\s/g, '');
+                    if (!typed) return 'type something bro';
+                    if (typed === alphabetBackwards) return null;
+                    let i = 0;
+                    while (i < typed.length && typed[i] === alphabetBackwards[i]) i++;
+                    if (i === typed.length) return `keep going. that's only ${typed.length} letters`;
+                    return `nope. you messed up at letter ${i + 1}`;
+                }
+            },
+            {
+                kind: 'slider',
+                id: 'trust',
+                q: 'how much do you trust us?',
+                hint: 'move it to exactly 73. no numbers, no peeking',
+                check(v) {
+                    if (v === 73) return null;
+                    if (Math.abs(v - 73) <= 3) return 'so close';
+                    return v > 73 ? 'too high' : 'too low';
+                }
+            },
+            {
+                kind: 'year',
+                id: 'birthYear',
+                q: 'when were you born?',
+                hint: 'click through the years. we start at 1900. we like to be thorough',
+                check(v) {
+                    if (v === 1900) return "you're not 126 years old";
+                    return null;
+                }
+            },
+            {
+                kind: 'sure'
+            },
+            {
                 kind: 'end',
                 q: (a) => `ok ${a.name}. nice to meet you.`,
                 hint: '(the rest of the questions are still being cooked)'
             }
         ];
 
-        function render(i, note) {
+        function renderCard(i, note) {
+            const c = cards[i];
+            if (c.kind === 'end') return renderEnd(i);
+            if (c.kind === 'slider') return renderSlider(i);
+            if (c.kind === 'year') return renderYear(i);
+            if (c.kind === 'sure') return renderSure(i);
+            return renderText(i, note);
+        }
+
+        function renderEnd(i) {
+            const c = cards[i];
+            card.innerHTML = `
+                ${count(i)}
+                <h2>${esc(c.q(answers))}</h2>
+                <p class="hint">${c.hint}</p>`;
+        }
+
+        function renderText(i, note) {
             const c = cards[i];
             const q = esc(typeof c.q === 'function' ? c.q(answers) : c.q);
 
-            if (c.kind === 'end') {
-                card.innerHTML = `
-                    <p class="count">card ${i + 1} of way too many</p>
-                    <h2>${q}</h2>
-                    <p class="hint">${c.hint}</p>`;
-                return;
-            }
-
             card.innerHTML = `
-                <p class="count">card ${i + 1} of way too many</p>
+                ${count(i)}
                 <form id="form" autocomplete="off">
                     <h2>${q}</h2>
                     <p class="hint">${c.hint}</p>
@@ -196,6 +258,121 @@
             });
         }
 
+        function renderSlider(i) {
+            const c = cards[i];
+            const start = Math.floor(Math.random() * 40);
+
+            card.innerHTML = `
+                ${count(i)}
+                <form id="form">
+                    <h2>${esc(c.q)}</h2>
+                    <p class="hint">${c.hint}</p>
+                    <input id="field" type="range" min="0" max="100" step="1" value="${start}">
+                    <p class="msg" id="msg"></p>
+                    <button type="submit">next</button>
+                </form>`;
+
+            const form = document.getElementById('form');
+            const field = document.getElementById('field');
+            const msg = document.getElementById('msg');
+
+            field.focus();
+            field.addEventListener('input', () => { msg.textContent = ''; });
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (busy) return;
+                const error = c.check(Number(field.value));
+                if (error) {
+                    msg.textContent = error;
+                    shake();
+                    return;
+                }
+                answers[c.id] = Number(field.value);
+                go(current + 1);
+            });
+        }
+
+        function renderYear(i) {
+            const c = cards[i];
+            const max = new Date().getFullYear();
+            let year = 1900;
+
+            card.innerHTML = `
+                ${count(i)}
+                <form id="form">
+                    <h2>${esc(c.q)}</h2>
+                    <p class="hint">${c.hint}</p>
+                    <p class="year" id="year">${year}</p>
+                    <p class="msg" id="msg"></p>
+                    <div class="row">
+                        <button type="button" id="plus">+1 year</button>
+                        <button type="submit">that's me</button>
+                    </div>
+                </form>`;
+
+            const form = document.getElementById('form');
+            const plus = document.getElementById('plus');
+            const yearEl = document.getElementById('year');
+            const msg = document.getElementById('msg');
+
+            plus.focus();
+            plus.addEventListener('click', () => {
+                if (year >= max) {
+                    msg.textContent = "that's the future. you can't go further";
+                    return;
+                }
+                year++;
+                yearEl.textContent = year;
+                msg.textContent = '';
+            });
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (busy) return;
+                const error = c.check(year);
+                if (error) {
+                    msg.textContent = error;
+                    shake();
+                    return;
+                }
+                answers[c.id] = year;
+                go(current + 1);
+            });
+        }
+
+        function renderSure(i) {
+            const [qText, hintText] = sureRounds[sureRound];
+            const yesFirst = Math.random() < 0.5;
+            const yes = '<button type="button" id="yes">yes</button>';
+            const no = '<button type="button" id="no">no</button>';
+
+            card.innerHTML = `
+                ${count(i)}
+                <h2>${esc(qText)}</h2>
+                <p class="hint">${esc(hintText)}</p>
+                <p class="msg" id="msg"></p>
+                <div class="row">${yesFirst ? yes + no : no + yes}</div>`;
+
+            document.getElementById('yes').addEventListener('click', () => {
+                if (busy) return;
+                sureRound++;
+                if (sureRound >= sureRounds.length) {
+                    answers.sure = true;
+                    go(current + 1);
+                } else {
+                    shake();
+                    renderSure(i);
+                }
+            });
+
+            document.getElementById('no').addEventListener('click', () => {
+                if (busy) return;
+                document.getElementById('msg').textContent = 'that was a no. try again';
+                shake();
+            });
+        }
+
         function shake() {
             card.classList.remove('shake');
             void card.offsetWidth;
@@ -207,7 +384,7 @@
             card.classList.add('leaving');
             setTimeout(() => {
                 current = to;
-                render(current, note);
+                renderCard(current, note);
                 card.classList.remove('leaving');
                 card.classList.add('entering');
                 busy = false;
@@ -218,10 +395,11 @@
         function restart() {
             answers = {};
             colorTries = 0;
+            sureRound = 0;
             go(0, 'told you. ball is not a name.');
         }
 
-        render(current);
+        renderCard(current);
     </script>
 </body>
 </html>

@@ -81,6 +81,36 @@ input[type="text"]::placeholder {
     display: block;
 }
 
+input[type="range"] {
+    display: block;
+    width: 100%;
+    margin-top: 36px;
+    accent-color: var(--red);
+    cursor: pointer;
+}
+
+.year {
+    margin: 28px 0 0;
+    font-size: 72px;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.card .row button,
+.card form .row button {
+    display: inline-block;
+    margin: 0;
+}
+
 .card.leaving {
     transform: translateX(-130%) rotate(-14deg);
     opacity: 0;
