@@ -13,31 +13,6 @@
     </main>
 
     <script>
-        const cards = [
-            {
-                kind: 'text',
-                id: 'name',
-                q: "what's your name?",
-                hint: "ya better put your real one or else...",
-                placeholder: 'name...',
-                check(value) {
-                    const v = value.trim();
-                    if (!v) return 'type something bro';
-
-                    if (v.toLowerCase().replace(/[^a-z]/g, '') === 'ball') {
-                        ballTries++;
-                        return ballMessages[Math.min(ballTries - 1, ballMessages.length - 1)];
-                    }
-                    return null;
-                }
-            },
-            {
-                kind: 'end',
-                q: (a) => `ok ${a.name}. nice to meet you.`,
-                hint: "(the rest of the questions are still being cooked)"
-            }
-        ];
-
         const ballMessages = [
             "nope. not that name.",
             "bro. no.",
@@ -47,13 +22,122 @@
         ];
 
         const card = document.getElementById('card');
-        const answers = {};
+        let answers = {};
         let current = 0;
         let ballTries = 0;
+        let colorTries = 0;
+        let busy = false;
 
-        function render(i) {
+        const esc = (s) => s.replace(/[&<>"']/g, (ch) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[ch]));
+
+        const isBall = (v) => v.toLowerCase().replace(/[^a-z]/g, '') === 'ball';
+
+        const cards = [
+            {
+                kind: 'text',
+                id: 'name',
+                q: "what's your name?",
+                hint: "first name is fine. we're not the government",
+                placeholder: 'name...',
+                check(v) {
+                    if (!v) return 'type something bro';
+                    return null;
+                }
+            },
+            {
+                kind: 'text',
+                id: 'email',
+                q: "what's your email?",
+                hint: "we promise to only email you 400 times a day",
+                placeholder: 'you@something.com',
+                check(v) {
+                    if (!v) return 'type something bro';
+                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return "that doesn't look like an email";
+                    return null;
+                }
+            },
+            {
+                kind: 'text',
+                id: 'username',
+                q: 'pick a username',
+                hint: 'make it good. or whatever',
+                placeholder: 'username...',
+                check(v) {
+                    if (!v) return 'type something bro';
+                    if (v.length < 3) return 'at least 3 characters';
+                    if (/\s/.test(v)) return 'no spaces';
+                    return null;
+                }
+            },
+            {
+                kind: 'text',
+                id: 'password',
+                inputType: 'password',
+                q: 'now a password',
+                hint: 'at least 8 characters. nothing crazy',
+                placeholder: 'password...',
+                check(v) {
+                    if (v.length < 8) return 'at least 8 characters';
+                    return null;
+                }
+            },
+            {
+                kind: 'text',
+                id: 'emailConfirm',
+                q: 'confirm your email',
+                hint: 'type it backwards. yes, backwards',
+                placeholder: '...',
+                check(v) {
+                    if (!v) return 'type something bro';
+                    const backwards = answers.email.split('').reverse().join('');
+                    if (v.toLowerCase() !== backwards.toLowerCase()) return "that's not backwards";
+                    return null;
+                }
+            },
+            {
+                kind: 'text',
+                id: 'password',
+                inputType: 'password',
+                q: (a) => `ok ${a.name}, that password won't cut it`,
+                hint: 'we need a stronger one. trust us',
+                placeholder: 'new password...',
+                check(v) {
+                    if (v === answers.password) return "can't be your old password";
+                    if (v.length < 8) return 'at least 8 characters';
+                    if (!/[A-Z]/.test(v)) return 'needs a capital letter';
+                    if (!/\d/.test(v)) return 'needs a number';
+                    if (!/[^A-Za-z0-9]/.test(v)) return 'needs a symbol';
+                    if (!/[aiou]/i.test(v)) return "needs a vowel that isn't e";
+                    return null;
+                }
+            },
+            {
+                kind: 'text',
+                id: 'color',
+                q: "what's your favorite color?",
+                hint: 'just curious',
+                placeholder: 'color...',
+                check(v) {
+                    if (!v) return 'type something bro';
+                    if (colorTries === 0) {
+                        colorTries++;
+                        return 'too popular. pick another one';
+                    }
+                    return null;
+                }
+            },
+            {
+                kind: 'end',
+                q: (a) => `ok ${a.name}. nice to meet you.`,
+                hint: '(the rest of the questions are still being cooked)'
+            }
+        ];
+
+        function render(i, note) {
             const c = cards[i];
-            const q = typeof c.q === 'function' ? c.q(answers) : c.q;
+            const q = esc(typeof c.q === 'function' ? c.q(answers) : c.q);
 
             if (c.kind === 'end') {
                 card.innerHTML = `
@@ -68,7 +152,7 @@
                 <form id="form" autocomplete="off">
                     <h2>${q}</h2>
                     <p class="hint">${c.hint}</p>
-                    <input id="field" type="text" placeholder="${c.placeholder}" maxlength="40" spellcheck="false" autocomplete="off">
+                    <input id="field" type="${c.inputType || 'text'}" placeholder="${c.placeholder}" maxlength="60" spellcheck="false" autocomplete="off">
                     <p class="msg" id="msg"></p>
                     <button type="submit">next</button>
                 </form>`;
@@ -77,20 +161,38 @@
             const field = document.getElementById('field');
             const msg = document.getElementById('msg');
 
+            if (note) msg.textContent = note;
             field.focus();
             field.addEventListener('input', () => { msg.textContent = ''; });
 
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
-                const error = c.check(field.value);
+                if (busy) return;
+                const value = field.value.trim();
+
+                if (isBall(value)) {
+                    ballTries++;
+                    shake();
+                    if (current === 0) {
+                        msg.textContent = ballMessages[Math.min(ballTries - 1, ballMessages.length - 1)];
+                        field.select();
+                    } else {
+                        msg.textContent = 'ball?? we said no. back to the start.';
+                        busy = true;
+                        setTimeout(restart, 1200);
+                    }
+                    return;
+                }
+
+                const error = c.check(value);
                 if (error) {
                     msg.textContent = error;
                     shake();
                     field.select();
                     return;
                 }
-                answers[c.id] = field.value.trim();
-                next();
+                answers[c.id] = value;
+                go(current + 1);
             });
         }
 
@@ -100,15 +202,23 @@
             card.classList.add('shake');
         }
 
-        function next() {
+        function go(to, note) {
+            busy = true;
             card.classList.add('leaving');
             setTimeout(() => {
-                current++;
-                render(current);
+                current = to;
+                render(current, note);
                 card.classList.remove('leaving');
                 card.classList.add('entering');
+                busy = false;
                 setTimeout(() => card.classList.remove('entering'), 400);
             }, 350);
+        }
+
+        function restart() {
+            answers = {};
+            colorTries = 0;
+            go(0, 'told you. ball is not a name.');
         }
 
         render(current);
