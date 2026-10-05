@@ -87,12 +87,12 @@
                 kind: 'text',
                 id: 'emailConfirm',
                 q: 'confirm your email',
-                hint: 'type it backwards. yes, backwards',
-                placeholder: '...',
+                hint: "TYPE IT IN ALL CAPS. we're hard of hearing",
+                placeholder: 'YOU@SOMETHING.COM',
                 check(v) {
                     if (!v) return 'type something bro';
-                    const backwards = answers.email.split('').reverse().join('');
-                    if (v.toLowerCase() !== backwards.toLowerCase()) return "that's not backwards";
+                    if (v.toLowerCase() !== answers.email.toLowerCase()) return "that's not the email you gave us";
+                    if (v !== v.toUpperCase()) return 'LOUDER. we can barely hear you';
                     return null;
                 }
             },
