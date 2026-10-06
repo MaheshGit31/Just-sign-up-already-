@@ -31,12 +31,29 @@
 
         const alphabetBackwards = 'zyxwvutsrqponmlkjihgfedcba';
 
+        const vibeLabels = ['vibes', 'sort of vibes', 'a bus', 'vibes?', 'traffic light', 'not vibes', 'a hill', 'mid', 'aura'];
+
+        const termsFiller = [
+            'the user agrees to be mildly inconvenienced at all times.',
+            'we may or may not read what you type.',
+            'any resemblance to a good sign up page is a coincidence.',
+            'the user waives their right to a normal experience.',
+            'cookies are not included. sorry.',
+            'we reserve the right to ask one more question.',
+            'time spent here will not be refunded.',
+            'by scrolling you accept everything below, and above.'
+        ];
+
+        const termsTarget = 'the user admits that ball is a perfectly good name.';
+
         const card = document.getElementById('card');
         let answers = {};
         let current = 0;
         let ballTries = 0;
         let colorTries = 0;
         let sureRound = 0;
+        let captchaTries = 0;
+        let holdSeconds = 30;
         let busy = false;
 
         const esc = (s) => s.replace(/[&<>"']/g, (ch) => ({
@@ -182,27 +199,43 @@
                 kind: 'sure'
             },
             {
-                kind: 'end',
-                q: (a) => `ok ${a.name}. nice to meet you.`,
-                hint: '(the rest of the questions are still being cooked)'
+                kind: 'hold',
+                id: 'serious',
+                q: 'ok but are you serious?',
+                hint: 'hold the button for 30 seconds. let go and it starts over'
+            },
+            {
+                kind: 'captcha',
+                id: 'vibes',
+                q: 'select all squares containing vibes',
+                hint: "we'll know if you got it wrong"
+            },
+            {
+                kind: 'terms',
+                id: 'terms',
+                q: 'terms and conditions',
+                hint: 'scroll to the bottom. read every word. we will know'
+            },
+            {
+                kind: 'end'
             }
         ];
 
         function renderCard(i, note) {
             const c = cards[i];
-            if (c.kind === 'end') return renderEnd(i);
+            if (c.kind === 'end') return renderEnd();
+            if (c.kind === 'hold') return renderHold(i);
+            if (c.kind === 'captcha') return renderCaptcha(i, note);
+            if (c.kind === 'terms') return renderTerms(i);
             if (c.kind === 'slider') return renderSlider(i);
             if (c.kind === 'year') return renderYear(i);
             if (c.kind === 'sure') return renderSure(i);
             return renderText(i, note);
         }
 
-        function renderEnd(i) {
-            const c = cards[i];
-            card.innerHTML = `
-                ${count(i)}
-                <h2>${esc(c.q(answers))}</h2>
-                <p class="hint">${c.hint}</p>`;
+        function renderEnd() {
+            try { sessionStorage.setItem('jsuaName', answers.name || ''); } catch (e) {}
+            location.href = './ending.html';
         }
 
         function renderText(i, note) {
@@ -373,6 +406,184 @@
             });
         }
 
+        function ballReset(msg) {
+            ballTries++;
+            shake();
+            msg.textContent = 'ball?? we said no. back to the start.';
+            busy = true;
+            setTimeout(restart, 1200);
+        }
+
+        function renderHold(i) {
+            const c = cards[i];
+
+            card.innerHTML = `
+                ${count(i)}
+                <h2>${esc(c.q)}</h2>
+                <p class="hint">${c.hint}</p>
+                <button type="button" class="hold" id="hold"><span class="fill" id="fill"></span><span class="label" id="label">hold me</span></button>
+                <p class="msg" id="msg"></p>`;
+
+            const hold = document.getElementById('hold');
+            const fill = document.getElementById('fill');
+            const label = document.getElementById('label');
+            const msg = document.getElementById('msg');
+            let startedAt = 0;
+            let frame = 0;
+            let holding = false;
+
+            const tick = () => {
+                const elapsed = (performance.now() - startedAt) / 1000;
+                const pct = Math.min(elapsed / holdSeconds, 1);
+                fill.style.width = (pct * 100) + '%';
+                label.textContent = Math.max(Math.ceil(holdSeconds - elapsed), 0) + 's left';
+                if (pct >= 1) {
+                    holding = false;
+                    answers[c.id] = true;
+                    go(current + 1);
+                    return;
+                }
+                frame = requestAnimationFrame(tick);
+            };
+
+            const start = () => {
+                if (busy || holding) return;
+                holding = true;
+                msg.textContent = '';
+                startedAt = performance.now();
+                frame = requestAnimationFrame(tick);
+            };
+
+            const stop = () => {
+                if (!holding) return;
+                holding = false;
+                cancelAnimationFrame(frame);
+                fill.style.width = '0';
+                label.textContent = 'hold me';
+                msg.textContent = 'you let go. start over';
+                shake();
+            };
+
+            hold.addEventListener('pointerdown', (e) => { e.preventDefault(); start(); });
+            hold.addEventListener('pointerup', stop);
+            hold.addEventListener('pointerleave', stop);
+            hold.addEventListener('pointercancel', stop);
+            hold.addEventListener('contextmenu', (e) => e.preventDefault());
+            hold.addEventListener('blur', stop);
+            hold.addEventListener('keydown', (e) => {
+                if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); start(); }
+            });
+            hold.addEventListener('keyup', (e) => {
+                if (e.key === ' ' || e.key === 'Enter') stop();
+            });
+        }
+
+        function renderCaptcha(i, note) {
+            const c = cards[i];
+            const labels = vibeLabels.slice();
+            for (let n = labels.length - 1; n > 0; n--) {
+                const k = Math.floor(Math.random() * (n + 1));
+                [labels[n], labels[k]] = [labels[k], labels[n]];
+            }
+
+            card.innerHTML = `
+                ${count(i)}
+                <form id="form">
+                    <h2>${esc(c.q)}</h2>
+                    <p class="hint">${c.hint}</p>
+                    <div class="grid">${labels.map((l) => `<button type="button" class="tile">${esc(l)}</button>`).join('')}</div>
+                    <p class="msg" id="msg"></p>
+                    <button type="submit">verify</button>
+                </form>`;
+
+            const form = document.getElementById('form');
+            const msg = document.getElementById('msg');
+            if (note) msg.textContent = note;
+
+            form.querySelectorAll('.tile').forEach((tile) => {
+                tile.addEventListener('click', () => {
+                    tile.classList.toggle('on');
+                    msg.textContent = '';
+                });
+            });
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (busy) return;
+                if (!form.querySelector('.tile.on')) {
+                    msg.textContent = 'select something bro';
+                    shake();
+                    return;
+                }
+                captchaTries++;
+                if (captchaTries < 3) {
+                    shake();
+                    renderCaptcha(i, 'wrong vibes. try again');
+                    return;
+                }
+                answers[c.id] = true;
+                go(current + 1);
+            });
+        }
+
+        function renderTerms(i) {
+            const c = cards[i];
+            let sections = '';
+            for (let n = 1; n <= 40; n++) {
+                const a = termsFiller[(n * 3) % termsFiller.length];
+                const b = termsFiller[(n * 5 + 1) % termsFiller.length];
+                sections += `<h4>section ${n}</h4><p>${a} ${b}</p>`;
+                if (n === 20) sections += `<p>${termsTarget}</p>`;
+            }
+
+            card.innerHTML = `
+                ${count(i)}
+                <form id="form" autocomplete="off">
+                    <h2>${esc(c.q)}</h2>
+                    <p class="hint">${c.hint}</p>
+                    <div class="terms" id="terms">${sections}</div>
+                    <input id="field" type="text" placeholder="scroll to the bottom first..." maxlength="120" spellcheck="false" autocomplete="off" disabled>
+                    <p class="msg" id="msg"></p>
+                    <button type="submit" id="next" disabled>agree</button>
+                </form>`;
+
+            const form = document.getElementById('form');
+            const box = document.getElementById('terms');
+            const field = document.getElementById('field');
+            const msg = document.getElementById('msg');
+            const next = document.getElementById('next');
+            const norm = (v) => v.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+            box.addEventListener('scroll', () => {
+                if (!field.disabled) return;
+                if (box.scrollTop + box.clientHeight >= box.scrollHeight - 4) {
+                    field.disabled = false;
+                    next.disabled = false;
+                    field.placeholder = 'retype the sentence from section 20...';
+                    msg.textContent = 'ok. now retype the sentence from section 20';
+                }
+            });
+
+            field.addEventListener('input', () => { msg.textContent = ''; });
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (busy || field.disabled) return;
+                const value = field.value.trim();
+                if (isBall(value)) {
+                    ballReset(msg);
+                    return;
+                }
+                if (norm(value) !== norm(termsTarget)) {
+                    msg.textContent = "that's not what it says. did you even read it?";
+                    shake();
+                    return;
+                }
+                answers[c.id] = true;
+                go(current + 1);
+            });
+        }
+
         function shake() {
             card.classList.remove('shake');
             void card.offsetWidth;
@@ -396,6 +607,7 @@
             answers = {};
             colorTries = 0;
             sureRound = 0;
+            captchaTries = 0;
             go(0, 'told you. ball is not a name.');
         }
 

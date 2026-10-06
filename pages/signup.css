@@ -146,3 +146,132 @@ input[type="range"] {
     .card { padding: 24px 22px 22px; }
     .card h2 { font-size: 26px; }
 }
+
+.hold {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 58px;
+    margin: 30px 0 0;
+    padding: 0;
+    overflow: hidden;
+    font-size: 15px;
+    cursor: pointer;
+    user-select: none;
+    touch-action: none;
+    transform: rotate(-0.5deg);
+}
+
+.hold:hover,
+.hold:active {
+    transform: rotate(-0.5deg);
+}
+
+.hold .fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    background: #f3c9c4;
+}
+
+.hold .label {
+    position: relative;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 24px;
+}
+
+.tile {
+    min-width: 0;
+    height: 72px;
+    margin: 0;
+    padding: 4px;
+    font-size: 13px;
+    font-weight: 400;
+    background: #fffdf9;
+    border: 2px solid var(--ink);
+    transform: none;
+}
+
+.tile:hover,
+.tile:active {
+    transform: none;
+}
+
+.tile.on {
+    background: #fbe3e0;
+    border-color: var(--red);
+}
+
+.terms {
+    height: 170px;
+    margin-top: 22px;
+    padding: 4px 12px 12px;
+    overflow-y: auto;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #444;
+    background: #fffdf9;
+    border: 2px solid var(--ink);
+}
+
+.terms h4 {
+    margin: 14px 0 4px;
+    font-size: 13px;
+    color: var(--ink);
+}
+
+.terms p {
+    margin: 0;
+}
+
+input[type="text"]:disabled {
+    cursor: not-allowed;
+}
+
+.card form button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.finish {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+}
+
+.finish h1 {
+    margin: 0;
+    font-size: clamp(30px, 6vw, 60px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    transform: rotate(-1.5deg);
+    animation: fadein 0.6s ease-out;
+}
+
+.finish.sike h1 {
+    font-size: clamp(56px, 17vw, 190px);
+    color: var(--red);
+    transform: rotate(-4deg);
+    animation: pop 0.35s ease-out;
+}
+
+@keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes pop {
+    from { transform: scale(0.3) rotate(10deg); opacity: 0; }
+    to   { transform: scale(1) rotate(-4deg); opacity: 1; }
+}

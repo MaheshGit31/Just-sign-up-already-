@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>you did it...</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="./signup.css">
+</head>
+<body>
+    <main class="finish" id="finish">
+        <h1 id="line"></h1>
+    </main>
+
+    <script>
+        let name = '';
+        try { name = sessionStorage.getItem('jsuaName') || ''; } catch (e) {}
+
+        const finish = document.getElementById('finish');
+        const line = document.getElementById('line');
+
+        line.textContent = name ? `ok ${name}. i guess you've finished.` : "ok. i guess you've finished.";
+
+        setTimeout(() => {
+            finish.classList.add('sike');
+            line.textContent = 'SIKEEEE';
+        }, 2600);
+
+        setTimeout(() => {
+            location.href = '../index.html';
+        }, 4300);
+    </script>
+</body>
+</html>
