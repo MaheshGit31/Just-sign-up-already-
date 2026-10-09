@@ -1,4 +1,4 @@
- # Just-sign-up-already-
+ # Just Sign Up already!
 A terrible sign in page that forces you to do random stuff to sign up. (Gaurunteed crashout ✌️✌️)
 
 # What is it?
